@@ -1,9 +1,15 @@
 {
   "name": "xiaolai",
+  "owner": {
+    "name": "xiaolai"
+  },
   "plugins": [
     {
       "name": "reading-assistant",
-      "source": { "source": "github", "repo": "xiaolai/reading-assistant-for-claude" },
+      "source": {
+        "source": "github",
+        "repo": "xiaolai/reading-assistant-for-claude"
+      },
       "description": "Process EPUB books into summaries, knowledge extractions, Obsidian notes, and RAG databases",
       "version": "0.1.0",
       "author": { "name": "xiaolai" },
