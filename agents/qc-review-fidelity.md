@@ -1,6 +1,10 @@
 ---
 description: |
   Verify review synthesis accuracy against raw source reviews.
+  <example>
+  Context: QC coordinator dispatches fidelity check after review synthesis
+  assistant: "I'll use the review fidelity checker to verify synthesis claims against raw reviews."
+  </example>
 model: sonnet
 color: red
 tools: Read, Write

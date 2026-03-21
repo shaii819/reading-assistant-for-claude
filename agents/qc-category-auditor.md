@@ -1,6 +1,10 @@
 ---
 description: |
   Spot-check extracted items for correct categorization.
+  <example>
+  Context: QC coordinator dispatches category audit after extraction
+  assistant: "I'll use the category auditor to spot-check extraction categorization accuracy."
+  </example>
 model: sonnet
 color: red
 tools: Read, Write

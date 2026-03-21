@@ -9,7 +9,7 @@
       "author": { "name": "xiaolai" },
       "repository": "https://github.com/xiaolai/reading-assistant-for-claude",
       "license": "MIT",
-      "keywords": ["epub", "reading", "summarization", "obsidian", "rag", "zettelkasten"],
+      "keywords": ["epub", "reading", "summarization", "obsidian", "rag", "zettelkasten", "book-review"],
       "category": "productivity"
     }
   ]

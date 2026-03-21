@@ -1,6 +1,10 @@
 ---
 description: |
   Mechanically verify extracted quotes against source text using fuzzy matching.
+  <example>
+  Context: QC coordinator dispatches quote verification after extraction
+  assistant: "I'll use the quote verifier to check all extracted quotes against source text."
+  </example>
 model: haiku
 color: red
 tools: Bash, Read, Write

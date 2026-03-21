@@ -1,6 +1,10 @@
 ---
 description: |
   Verify that chapter summaries cover major topics from source text.
+  <example>
+  Context: QC coordinator dispatches coverage check after summarization
+  assistant: "I'll use the coverage checker to verify summaries address all key topics."
+  </example>
 model: sonnet
 color: red
 tools: Read, Write

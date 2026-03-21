@@ -159,8 +159,11 @@ def fetch_all_reviews(title: str, isbn: str | None, output_dir: str) -> None:
 
 
 if __name__ == "__main__":
-    title = sys.argv[1] if len(sys.argv) > 1 else "Unknown"
-    isbn = sys.argv[2] if len(sys.argv) > 2 else None
-    out_dir = sys.argv[3] if len(sys.argv) > 3 else "reviews/raw"
+    if len(sys.argv) < 3:
+        print("Usage: fetch_reviews.py <title> <output_dir> [isbn]")
+        sys.exit(1)
+    title = sys.argv[1]
+    out_dir = sys.argv[2]
+    isbn = sys.argv[3] if len(sys.argv) > 3 else None
     fetch_all_reviews(title, isbn, out_dir)
     print(f"Reviews written to {out_dir}/")
