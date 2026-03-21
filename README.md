@@ -1,19 +1,19 @@
 # reading-assistant
 
-Transform EPUB books into structured knowledge: summaries, extractions, Obsidian notes, and a searchable RAG database.
+Transform EPUB books into structured, searchable knowledge: multilingual summaries, knowledge extractions, Obsidian Zettelkasten notes, synthesized book reviews, and a sqlite-vec RAG database.
+
+Part of the [xiaolai Claude plugin marketplace](https://github.com/xiaolai/claude-plugin-marketplace).
 
 ## What it does
 
-- **Chapter summaries** — multilingual, one per chapter plus a full-book synthesis
-- **Knowledge extractions** — facts, examples, metaphors, quotes, and a glossary
-- **Book reviews** — fetched from Hardcover and Open Library, synthesized into a meta-review
-- **Quality control** — parallel QC agents verify quotes, coverage, categorization, and review fidelity
+Given an EPUB file, this plugin produces:
+
+- **Multilingual chapter summaries** in the book's language + your target language
+- **Knowledge extractions** — facts, examples, metaphors/analogies, quotes/punch lines, and a glossary
+- **Synthesized book reviews** from Hardcover, Open Library, and Google Books
 - **Obsidian Zettelkasten notes** — MOC, chapter notes, concept notes, and quote notes with wikilinks
-- **RAG database** — sqlite-vec full-text + vector search over all chunks
-
-## Part of the xiaolai marketplace
-
-Install and manage this plugin through the [xiaolai Claude plugin marketplace](https://github.com/xiaolai/claude-plugin-marketplace).
+- **sqlite-vec RAG database** with hybrid full-text + vector search, per-book and cross-library
+- **Quality control** — 4 parallel QC agents verify quotes, coverage, categorization, and review fidelity
 
 ## Installation
 
@@ -21,7 +21,7 @@ Install and manage this plugin through the [xiaolai Claude plugin marketplace](h
 claude plugin install reading-assistant@xiaolai --scope project
 ```
 
-Then initialize the environment in your project:
+Then initialize the environment:
 
 ```
 /read:init
@@ -31,68 +31,146 @@ Then initialize the environment in your project:
 
 | Command | Description |
 |---------|-------------|
-| `/read:init` | Set up reading-assistant: create venv, install dependencies, validate environment |
-| `/read:process` | Full pipeline: parse, summarize, extract, review, QC, Obsidian notes, RAG database |
-| `/read:summarize` | Generate chapter summaries in source + target language |
-| `/read:extract` | Extract facts, examples, metaphors, quotes, and glossary |
-| `/read:reviews` | Fetch and synthesize book reviews |
-| `/read:cards` | Generate Obsidian Zettelkasten notes from existing outputs |
-| `/read:index` | Build or rebuild sqlite-vec RAG database |
-| `/read:query` | Search the RAG database |
-| `/read:status` | Show pipeline processing status for a book |
+| `/read:init` | Set up Python venv and install dependencies |
+| `/read:process <epub>` | Full pipeline: parse, summarize, extract, review, QC, Obsidian, RAG |
+| `/read:summarize <epub>` | Generate chapter summaries in source + target language |
+| `/read:extract <epub>` | Extract facts, examples, metaphors, quotes, and glossary |
+| `/read:reviews <epub-or-title>` | Fetch and synthesize book reviews |
+| `/read:cards <output-dir>` | Generate Obsidian Zettelkasten notes |
+| `/read:index <output-dir>` | Build or rebuild sqlite-vec RAG database |
+| `/read:query <question>` | Search the RAG database |
+| `/read:status <output-dir>` | Show pipeline processing status |
+
+### Key flags
+
+```
+/read:process book.epub --output ~/notes --lang ja --skip reviews --force
+/read:extract book.epub --category quotes
+/read:query "cognitive bias" --book thinking-fast-and-slow --top 10
+/read:index ~/reading/book --rebuild --provider ollama
+```
 
 ## How it works
 
 The pipeline runs in four phases:
 
-1. **Phase 1 — Parse & chunk** (`parser`, `chunker`): EPUB is parsed into structured chapter JSON with metadata. Chapters are split into overlapping token-bounded chunks. Book reviews are fetched in parallel.
-2. **Phase 2 — AI processing** (`summarizer`, `extractor`, `reviewer`): Each chunk is processed for summaries and knowledge extraction. Reviews are synthesized into a meta-review. A cost estimate is presented before this phase begins.
-3. **Phase 3 — Quality control** (`qc-coordinator` + 4 sub-agents): Four parallel QC agents verify quote accuracy, summary coverage, category correctness, and review fidelity. Failed checks trigger automatic retry up to a configurable threshold.
-4. **Phase 4 — Outputs** (`cardmaker`, `indexer`): Obsidian Zettelkasten notes are generated with wikilinks. A sqlite-vec database is built for full-text and vector search.
+```
+Phase 1: PARSE (mechanical)
+  EPUB → metadata.json + chapters/*.json + language detection
+  + fetch book reviews from 3 APIs in parallel
+
+Cost Gate: token estimate + user confirmation
+
+Phase 2: AI PROCESSING (parallel)
+  → chapter summaries (source + target language)
+  → knowledge extractions (5 categories)
+  → review synthesis (meta-review with citations)
+
+Phase 3: QUALITY CONTROL (parallel, auto-retry)
+  → quote verification (mechanical fuzzy match)
+  → summary coverage check (semantic, source-language only)
+  → category accuracy audit (20% sample)
+  → review fidelity check (claim traceability)
+  Verdict: PASS / WARN / FAIL — Phase 4 blocked on FAIL
+
+Phase 4: OUTPUTS (parallel)
+  → Obsidian Zettelkasten notes + vault copy
+  → sqlite-vec RAG database (per-book + unified)
+```
+
+The pipeline is **resumable** — if interrupted, re-run `/read:process` and it picks up where it left off. Config changes are detected automatically.
 
 ## Agents
 
-| Agent | Model | Description |
-|-------|-------|-------------|
-| `parser` | haiku | Parse EPUB files into structured chapter data, metadata, and detect language |
-| `chunker` | haiku | Split chapter text into overlapping chunks for AI processing |
-| `summarizer` | sonnet | Generate multilingual chapter and book summaries |
-| `extractor` | sonnet | Extract structured knowledge: facts, examples, metaphors, quotes, glossary |
-| `reviewer` | sonnet | Synthesize book reviews from multiple sources into a meta-review |
-| `qc-coordinator` | opus | Orchestrate quality control with parallel sub-agents, auto-retry, and threshold gating |
-| `qc-quote-verifier` | haiku | Mechanically verify extracted quotes against source text using fuzzy matching |
-| `qc-category-auditor` | sonnet | Spot-check extracted items for correct categorization |
-| `qc-coverage-checker` | sonnet | Verify that chapter summaries cover major topics from source text |
-| `qc-review-fidelity` | sonnet | Verify review synthesis accuracy against raw source reviews |
-| `cardmaker` | sonnet | Generate atomic Obsidian Zettelkasten notes from processed book data |
-| `indexer` | haiku | Build sqlite-vec RAG databases for book content search |
-
-## Prerequisites
-
-- **Python 3.10+** — required by all scripts
-- **`/read:init`** — must be run once per project before any other command; creates a virtualenv and installs all Python dependencies
-- **`OPENAI_API_KEY`** (optional) — enables OpenAI embeddings and models as an alternative to Claude
-- **`HARDCOVER_API_KEY`** (optional) — enables review fetching from Hardcover
-- **Ollama** (optional) — enables local model inference; run `ollama serve` before processing
+| Agent | Model | Role |
+|-------|-------|------|
+| `parser` | haiku | Parse EPUB, detect language, infer genre |
+| `chunker` | haiku | Chapter-aware recursive chunking with tiktoken |
+| `summarizer` | sonnet | Multilingual chapter + book summaries |
+| `extractor` | sonnet | Structured knowledge extraction (5 categories) |
+| `reviewer` | sonnet | Review synthesis with citations |
+| `qc-coordinator` | opus | Orchestrate QC sub-agents, retry loop, threshold gating |
+| `qc-quote-verifier` | haiku | Mechanical fuzzy-match quote verification |
+| `qc-coverage-checker` | sonnet | Summary topic coverage (source language only) |
+| `qc-category-auditor` | sonnet | Extraction category spot-check |
+| `qc-review-fidelity` | sonnet | Review synthesis claim traceability |
+| `cardmaker` | sonnet | Obsidian Zettelkasten note generation |
+| `indexer` | haiku | sqlite-vec RAG database building |
 
 ## Configuration
 
-Create `.claude/reading-assistant.local.md` in your project to override defaults. The file uses YAML frontmatter:
+Create `.claude/reading-assistant.local.md` in your project:
 
 ```yaml
 ---
-default_language: en
-target_languages: [zh, ja]
+# Output directories
+default_output_dir: ~/reading
+obsidian_vault: ~/obsidian-vault/Books
+
+# Target language for translated summaries
+target_language: zh-CN
+
+# Models per stage (haiku, sonnet, opus, "ollama:<model>", "openai:<model>")
+models:
+  summarizer: sonnet
+  extractor: sonnet
+  reviewer: sonnet
+  qc: opus
+
+# Chunking
 chunk_size: 2000
-overlap: 0.15
-summarizer_model: sonnet
-extractor_model: sonnet
-qc_model: opus
-obsidian_vault: /path/to/your/vault
+chunk_overlap: 0.15
+
+# RAG embeddings ("openai" or "ollama" — pinned per database)
+embedding_provider: openai
+unified_db: ~/.reading-assistant/library.db
+
+# QC
+max_retries: 3
+quote_match_threshold: 0.95
+
+# API keys (or set as environment variables)
+hardcover_api_key: ""
 ---
 ```
 
-All fields are optional. Unset fields fall back to built-in defaults.
+All fields optional. See [GUIDE.md](GUIDE.md) for detailed documentation.
+
+## Output structure
+
+```
+~/reading/<book-slug>/
+├── metadata.json              # Book metadata + chapter list
+├── pipeline.json              # Processing status + QC verdict
+├── chapters/*.json            # Parsed chapters with chunks
+├── summaries/<lang>/*.md      # Per-chapter + book-level summaries
+├── extractions/*.json         # facts, examples, metaphors, quotes, glossary
+├── reviews/raw/*.json         # Per-source review data
+├── reviews/synthesis.md       # AI-synthesized meta-review
+├── obsidian/                  # Zettelkasten notes (MOC, chapters, concepts, quotes)
+├── rag/book.db                # Per-book sqlite-vec database
+└── qc/report.json             # QC results
+```
+
+## Prerequisites
+
+- **Python 3.10+** — required
+- **`/read:init`** — run once to create venv and install dependencies
+- **OPENAI_API_KEY** (optional) — for OpenAI embeddings and models
+- **HARDCOVER_API_KEY** (optional) — for Hardcover book reviews
+- **Ollama** (optional) — for local model inference (`ollama serve`)
+
+## Provider support
+
+Models for summarization, extraction, and review can be set per-stage:
+
+| Provider | Example | Cost |
+|----------|---------|------|
+| Claude | `sonnet`, `opus`, `haiku` | API pricing |
+| Ollama | `ollama:mistral`, `ollama:llama3` | Free (local) |
+| OpenAI | `openai:gpt-4o` | API pricing |
+
+Embedding providers for RAG: `openai` (text-embedding-3-small, 1536d) or `ollama` (nomic-embed-text, 768d). Each database is pinned to one provider.
 
 ## License
 
