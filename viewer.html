@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading Assistant Viewer</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --bg2: #16213e;
+  --surface: #1e2040;
+  --surface2: #252848;
+  --border: #2e3166;
+  --border2: #3d4180;
+  --accent: #4361ee;
+  --accent2: #3a0ca3;
+  --accent-light: #7b8fff;
+  --text: #e0e0e0;
+  --text2: #a0a0c0;
+  --text3: #6070a0;
+  --pass: #2ecc71;
+  --warn: #f39c12;
+  --fail: #e74c3c;
+  --info: #3498db;
+  --serif: Georgia, 'Times New Roman', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+  --radius: 8px;
+  --radius2: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  --transition: 0.2s ease;
+}
+[data-theme="light"] {
+  --bg: #f4f5f9;
+  --bg2: #eaebf3;
+  --surface: #ffffff;
+  --surface2: #f0f1f8;
+  --border: #d0d3e8;
+  --border2: #b8bcd8;
+  --accent-light: #5a76ff;
+  --text: #1a1a2e;
+  --text2: #4a4a70;
+  --text3: #7070a0;
+  --shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background 0.2s, color 0.2s;
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* Layout */
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.logo svg { color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+#bookTitleHeader { font-size: 13px; color: var(--text2); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.icon-btn {
+  background: none; border: 1px solid var(--border); color: var(--text2);
+  border-radius: var(--radius); padding: 6px 12px; cursor: pointer; font-size: 13px;
+  transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+}
+button.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+button.primary {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius); padding: 12px 28px; cursor: pointer;
+  font-size: 15px; font-weight: 500; transition: background 0.2s;
+}
+button.primary:hover { background: var(--accent2); }
+.file-input-wrap { position: relative; display: inline-block; }
+.file-input-wrap input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+
+/* Hero */
+#hero {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; flex: 1; padding: 60px 24px; text-align: center;
+}
+.hero-icon {
+  width: 72px; height: 72px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 20px; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 24px; box-shadow: 0 8px 32px rgba(67,97,238,0.3);
+}
+#hero h1 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+#hero p { color: var(--text2); font-size: 16px; max-width: 480px; margin-bottom: 32px; line-height: 1.7; }
+.feature-list { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; justify-content: center; }
+.feature-chip {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 14px; font-size: 13px; color: var(--text2);
+}
+
+/* Main */
+#main { display: none; flex-direction: column; flex: 1; }
+
+/* Tab Bar */
+.tab-bar {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; padding: 0 24px; gap: 2px; overflow-x: auto;
+}
+.tab-bar::-webkit-scrollbar { height: 3px; }
+.tab-btn {
+  background: none; border: none; color: var(--text2);
+  padding: 14px 16px; cursor: pointer; font-size: 13px; font-weight: 500;
+  border-bottom: 2px solid transparent; white-space: nowrap;
+  transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-badge {
+  background: var(--surface2); border-radius: 10px;
+  padding: 1px 7px; font-size: 11px; color: var(--text3);
+}
+.tab-btn.active .tab-badge { background: rgba(67,97,238,0.2); color: var(--accent-light); }
+
+/* Content */
+.content { padding: 28px 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 20px; margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border2); }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-title { font-weight: 600; font-size: 15px; }
+.card-subtitle { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* Grid */
+.grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+@media (max-width: 768px) {
+  .grid-2, .grid-4 { grid-template-columns: 1fr; }
+  header { padding: 0 16px; }
+  .content { padding: 20px 16px; }
+  .tab-bar { padding: 0 16px; }
+}
+@media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2,1fr); } }
+
+/* Badges */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase;
+}
+.badge-pass { background: rgba(46,204,113,0.15); color: var(--pass); }
+.badge-warn { background: rgba(243,156,18,0.15); color: var(--warn); }
+.badge-fail { background: rgba(231,76,60,0.15); color: var(--fail); }
+.badge-info { background: rgba(52,152,219,0.15); color: var(--info); }
+.badge-neutral { background: var(--surface2); color: var(--text2); }
+.badge-high { background: rgba(46,204,113,0.12); color: var(--pass); }
+.badge-medium { background: rgba(243,156,18,0.12); color: var(--warn); }
+.badge-low { background: rgba(231,76,60,0.12); color: var(--fail); }
+
+/* Dots */
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-pass { background: var(--pass); }
+.dot-warn { background: var(--warn); }
+.dot-fail { background: var(--fail); }
+.dot-pending, .dot-neutral { background: var(--text3); }
+.dot-running { background: var(--info); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* Progress */
+.progress-wrap { background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
+.progress-bar { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+.progress-bar.pass { background: var(--pass); }
+.progress-bar.warn { background: var(--warn); }
+.progress-bar.fail { background: var(--fail); }
+.progress-bar.accent { background: var(--accent); }
+
+/* Meta grid */
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); gap: 12px; margin-bottom: 16px; }
+.meta-item { background: var(--surface2); border-radius: var(--radius); padding: 14px; }
+.meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); margin-bottom: 6px; }
+.meta-value { font-size: 16px; font-weight: 600; }
+.meta-value.large { font-size: 22px; }
+
+/* Phase list */
+.phase-list { display: flex; flex-direction: column; gap: 8px; }
+.phase-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; background: var(--surface2); border-radius: var(--radius);
+}
+.phase-name { font-size: 13px; font-weight: 500; flex: 1; }
+.phase-time { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+/* Warning */
+.warn-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 10px 12px; background: rgba(243,156,18,0.08);
+  border: 1px solid rgba(243,156,18,0.2); border-radius: var(--radius);
+  font-size: 13px; color: var(--warn); margin-bottom: 6px;
+}
+
+/* Verdict banner */
+.verdict-banner {
+  padding: 20px 24px; border-radius: var(--radius2); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 16px;
+}
+.verdict-banner.pass { background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.25); }
+.verdict-banner.warn { background: rgba(243,156,18,0.1); border: 1px solid rgba(243,156,18,0.25); }
+.verdict-banner.fail { background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.25); }
+.verdict-label { font-size: 22px; font-weight: 700; }
+.verdict-banner.pass .verdict-label { color: var(--pass); }
+.verdict-banner.warn .verdict-label { color: var(--warn); }
+.verdict-banner.fail .verdict-label { color: var(--fail); }
+.verdict-desc { font-size: 14px; color: var(--text2); }
+
+/* Lang tabs */
+.lang-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.lang-tab {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 6px 14px; cursor: pointer;
+  font-size: 13px; transition: all 0.2s; color: var(--text2);
+}
+.lang-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.lang-tab:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+/* Summary */
+.summary-book {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 24px; margin-bottom: 20px;
+  font-family: var(--serif); line-height: 1.8; font-size: 15px;
+}
+.summary-label {
+  font-family: var(--sans); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--accent); margin-bottom: 12px; font-weight: 600;
+}
+.chapter-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius2); overflow: hidden; margin-bottom: 8px; }
+.chapter-card-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px; cursor: pointer; user-select: none;
+}
+.chapter-card-header:hover { background: var(--surface2); }
+.chapter-num {
+  background: var(--accent); color: #fff; border-radius: 6px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.chapter-title-text { font-size: 14px; font-weight: 500; flex: 1; }
+.caret { width: 16px; height: 16px; color: var(--text3); transition: transform 0.2s; flex-shrink: 0; }
+.chapter-card-header.open .caret { transform: rotate(90deg); }
+.chapter-body { display: none; padding: 4px 20px 20px; font-family: var(--serif); font-size: 14px; line-height: 1.8; color: var(--text2); border-top: 1px solid var(--border); }
+.chapter-body.open { display: block; }
+
+/* Markdown */
+.md-content h1 { font-size: 20px; font-weight: 700; margin: 16px 0 10px; }
+.md-content h2 { font-size: 17px; font-weight: 600; margin: 14px 0 8px; }
+.md-content h3 { font-size: 15px; font-weight: 600; margin: 12px 0 6px; }
+.md-content p { margin: 8px 0; }
+.md-content strong { font-weight: 700; }
+.md-content em { font-style: italic; }
+.md-content blockquote {
+  border-left: 3px solid var(--accent); margin: 12px 0;
+  padding: 8px 16px; color: var(--text2); font-style: italic;
+  background: var(--surface2); border-radius: 0 var(--radius) var(--radius) 0;
+}
+.md-content code {
+  font-family: var(--mono); background: var(--surface2);
+  padding: 2px 6px; border-radius: 4px; font-size: 0.88em; color: var(--accent-light);
+}
+.md-content ul, .md-content ol { padding-left: 22px; margin: 8px 0; }
+.md-content li { margin: 4px 0; }
+.md-content hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.md-content a { color: var(--accent-light); text-decoration: none; }
+.md-content a:hover { text-decoration: underline; }
+
+/* Extractions */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-btn {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 6px 14px; cursor: pointer; font-size: 13px; color: var(--text2);
+  transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+}
+.filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.filter-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+.search-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 7px 14px; color: var(--text);
+  font-size: 13px; outline: none; width: 220px; transition: border-color 0.2s;
+}
+.search-box:focus { border-color: var(--accent); }
+.search-box::placeholder { color: var(--text3); }
+#visibleCount { font-size: 13px; color: var(--text3); margin-left: auto; }
+
+.ext-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 16px 18px; margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.ext-card:hover { border-color: var(--border2); }
+.ext-card.quote-card { border-left: 3px solid var(--accent); }
+.ext-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.ext-text { font-size: 14px; line-height: 1.6; flex: 1; }
+.ext-meta { font-size: 12px; color: var(--text3); margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ext-badges { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+.quote-text { font-family: var(--serif); font-size: 15px; font-style: italic; line-height: 1.7; }
+.glossary-term { font-weight: 700; font-size: 15px; }
+.glossary-def { font-size: 14px; color: var(--text2); margin: 6px 0; }
+.tag-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.tag {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 2px 10px; font-size: 11px; color: var(--text2);
+}
+#extractionsList > .empty-state { margin-top: 40px; }
+
+/* Reviews */
+.synthesis-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 28px 32px; margin-bottom: 20px;
+  font-family: var(--serif); font-size: 15px; line-height: 1.8;
+}
+.source-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius2); overflow: hidden; margin-bottom: 10px; }
+.source-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; user-select: none; }
+.source-header:hover { background: var(--surface2); }
+.source-name { font-weight: 600; font-size: 14px; flex: 1; }
+.source-rating { font-size: 13px; color: var(--text2); }
+.source-body { display: none; padding: 12px 18px 18px; border-top: 1px solid var(--border); }
+.source-body.open { display: block; }
+.review-item { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.6; }
+.review-item:last-child { border-bottom: none; }
+.review-reviewer { font-weight: 500; color: var(--accent-light); margin-bottom: 4px; }
+
+/* QC */
+.qc-summary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+.qc-stat { background: var(--surface2); border-radius: var(--radius); padding: 14px; text-align: center; }
+.qc-stat-num { font-size: 28px; font-weight: 700; }
+.qc-stat-label { font-size: 12px; color: var(--text3); margin-top: 4px; }
+@media (max-width: 640px) { .qc-summary-grid { grid-template-columns: repeat(2,1fr); } }
+.qc-check {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 18px 20px; margin-bottom: 12px;
+}
+.qc-check-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.qc-check-name { font-weight: 600; font-size: 14px; }
+.qc-stats-text { font-size: 12px; color: var(--text3); margin-top: 8px; }
+.failed-items { margin-top: 12px; }
+.failed-item {
+  padding: 8px 12px; background: var(--surface2); border-radius: var(--radius);
+  font-size: 12px; margin-bottom: 6px; font-family: var(--mono);
+  color: var(--text2); border-left: 2px solid var(--fail);
+}
+
+/* Pipeline */
+.pipeline-timeline { display: flex; flex-direction: column; }
+.pipeline-phase { display: flex; gap: 16px; position: relative; }
+.pipeline-phase::before {
+  content: ''; position: absolute; left: 15px; top: 32px; bottom: -8px;
+  width: 2px; background: var(--border);
+}
+.pipeline-phase:last-child::before { display: none; }
+.phase-dot-col { display: flex; flex-direction: column; align-items: center; padding-top: 10px; flex-shrink: 0; }
+.phase-circle {
+  width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; border: 2px solid var(--border);
+  background: var(--surface); position: relative; z-index: 1;
+}
+.phase-circle.completed { border-color: var(--pass); background: rgba(46,204,113,0.1); }
+.phase-circle.failed { border-color: var(--fail); background: rgba(231,76,60,0.1); }
+.phase-circle.running { border-color: var(--info); background: rgba(52,152,219,0.1); }
+.phase-circle.skipped { border-color: var(--text3); background: var(--surface2); }
+.phase-col { flex: 1; padding: 8px 0 24px; }
+.phase-label { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.phase-timing { font-size: 12px; color: var(--text3); font-family: var(--mono); }
+.phase-error { font-size: 12px; color: var(--fail); margin-top: 6px; }
+.config-pre {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 18px; margin-top: 20px;
+  font-family: var(--mono); font-size: 12px; color: var(--text2);
+  overflow-x: auto; line-height: 1.6; white-space: pre-wrap;
+}
+.cost-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
+.cost-table th {
+  text-align: left; padding: 8px 12px; background: var(--surface2);
+  color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+}
+.cost-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.cost-table tr:last-child td { border-bottom: none; font-weight: 600; }
+
+/* Section heading */
+.sh { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); font-weight: 600; margin: 24px 0 12px; }
+.sh:first-child { margin-top: 0; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 24px; color: var(--text3); font-size: 14px; }
+.empty-state svg { display: block; margin: 0 auto 16px; color: var(--border2); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+      Reading Assistant
+    </div>
+    <div class="header-right">
+      <span id="bookTitleHeader"></span>
+      <div class="file-input-wrap">
+        <button class="icon-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Open Folder
+        </button>
+        <input type="file" id="folderInputHeader" webkitdirectory multiple>
+      </div>
+      <button class="icon-btn" id="themeToggle">
+        <svg id="themeIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="hero">
+    <div class="hero-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+    </div>
+    <h1>Reading Assistant Viewer</h1>
+    <p>Select a processed book output folder to explore summaries, knowledge extractions, reviews, QC reports, and pipeline status.</p>
+    <div class="file-input-wrap">
+      <button class="primary">Select Output Folder</button>
+      <input type="file" id="folderInput" webkitdirectory multiple>
+    </div>
+    <div class="feature-list">
+      <span class="feature-chip">Multilingual Summaries</span>
+      <span class="feature-chip">Facts &amp; Quotes</span>
+      <span class="feature-chip">Book Reviews</span>
+      <span class="feature-chip">QC Report</span>
+      <span class="feature-chip">Pipeline Status</span>
+    </div>
+  </div>
+
+  <div id="main">
+    <div class="tab-bar" id="tabBar">
+      <button class="tab-btn active" data-tab="overview">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Overview
+      </button>
+      <button class="tab-btn" data-tab="summaries">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Summaries
+      </button>
+      <button class="tab-btn" data-tab="extractions">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        Extractions <span class="tab-badge" id="extBadge">0</span>
+      </button>
+      <button class="tab-btn" data-tab="reviews">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Reviews
+      </button>
+      <button class="tab-btn" data-tab="qc">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        QC Report
+      </button>
+      <button class="tab-btn" data-tab="pipeline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Pipeline
+      </button>
+    </div>
+
+    <div class="content">
+      <div class="section active" id="tab-overview"><div id="overviewInner"></div></div>
+      <div class="section" id="tab-summaries"><div id="summariesInner"></div></div>
+      <div class="section" id="tab-extractions">
+        <div class="filter-bar" id="filterBar">
+          <button class="filter-btn active" data-cat="all">All <span class="tab-badge" id="cAll">0</span></button>
+          <button class="filter-btn" data-cat="fact">Facts <span class="tab-badge" id="cFact">0</span></button>
+          <button class="filter-btn" data-cat="example">Examples <span class="tab-badge" id="cExample">0</span></button>
+          <button class="filter-btn" data-cat="metaphor">Metaphors <span class="tab-badge" id="cMetaphor">0</span></button>
+          <button class="filter-btn" data-cat="quote">Quotes <span class="tab-badge" id="cQuote">0</span></button>
+          <button class="filter-btn" data-cat="glossary">Glossary <span class="tab-badge" id="cGlossary">0</span></button>
+          <span id="visibleCount"></span>
+          <input type="text" class="search-box" id="extSearch" placeholder="Search extractions...">
+        </div>
+        <div id="extractionsList"></div>
+      </div>
+      <div class="section" id="tab-reviews"><div id="reviewsInner"></div></div>
+      <div class="section" id="tab-qc"><div id="qcInner"></div></div>
+      <div class="section" id="tab-pipeline"><div id="pipelineInner"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+const S = {
+  files: {}, metadata: null, pipeline: null, chapters: {}, summaries: {},
+  extractions: [], reviews: { synthesis: '', raw: {} }, qcReport: null,
+  currentLang: '', currentCat: 'all', searchQ: '', allCardsBuilt: false,
+};
+
+// ── Markdown renderer ──
+function md(text) {
+  if (!text) return '';
+  let h = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/^---$/gm,'<hr>')
+    .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>')
+    .replace(/^[-*] (.+)$/gm,'<li>$1</li>')
+    .replace(/^\d+\. (.+)$/gm,'<li>$1</li>');
+  h = h.replace(/((?:<li>[\s\S]+?<\/li>\n?)+)/g,'<ul>$1</ul>');
+  h = h.replace(/<\/blockquote>\n<blockquote>/g,'<br>');
+  const parts = h.split(/\n{2,}/);
+  return parts.map(b => {
+    b = b.trim();
+    if (!b) return '';
+    if (/^<(h[1-6]|ul|ol|blockquote|hr)/.test(b)) return b;
+    return '<p>' + b.replace(/\n/g,'<br>') + '</p>';
+  }).join('\n');
+}
+
+// ── Utils ──
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function tryJson(t) { try { return JSON.parse(t); } catch { return null; } }
+function numFmt(n) { return n == null ? '—' : Number(n).toLocaleString(); }
+function dur(a,b) {
+  if (!a || !b) return '';
+  const ms = new Date(b)-new Date(a);
+  if (ms<0) return '';
+  if (ms<1000) return ms+'ms';
+  if (ms<60000) return (ms/1000).toFixed(1)+'s';
+  return Math.floor(ms/60000)+'m '+Math.round((ms%60000)/1000)+'s';
+}
+function fmtTime(ts) { try { return new Date(ts).toLocaleTimeString(); } catch { return ts||''; } }
+function statusCls(s) {
+  const m={completed:'pass',passed:'pass',pass:'pass',failed:'fail',fail:'fail',error:'fail',warn:'warn',warning:'warn',running:'running',skipped:'skipped',pending:'pending'};
+  return m[(s||'').toLowerCase()]||'neutral';
+}
+function badge(v) {
+  if (!v) return '';
+  const cls={pass:'badge-pass',warn:'badge-warn',fail:'badge-fail',pass2:'badge-pass'};
+  const vl=v.toLowerCase();
+  const c=cls[vl]||'badge-neutral';
+  return '<span class="badge '+c+'">'+esc(v.toUpperCase())+'</span>';
+}
+function caret() {
+  return '<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+}
+function checkIcon(ok) {
+  if (ok) return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pass)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fail)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+}
+function phaseIcon(status) {
+  const s=(status||'').toLowerCase();
+  const col={completed:'var(--pass)',failed:'var(--fail)',running:'var(--info)',skipped:'var(--text3)',pending:'var(--text3)'}[s]||'var(--text3)';
+  if (s==='completed') return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+  if (s==='failed') return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  if (s==='running') return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+  if (s==='skipped') return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+  return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>';
+}
+function empty(msg) {
+  return '<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg><div>'+esc(msg)+'</div></div>';
+}
+function setHTML(id, html) { document.getElementById(id).innerHTML = html; }
+function titleCase(s) { return s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
+function pct(rate) { return Math.round((rate||0)*100); }
+
+// ── File loading ──
+async function readFile(f) {
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsText(f); });
+}
+
+async function loadFolder(fileList) {
+  S.files={}; S.chapters={}; S.summaries={}; S.extractions=[];
+  S.reviews={synthesis:'',raw:{}}; S.qcReport=null; S.metadata=null; S.pipeline=null;
+  S.allCardsBuilt=false;
+
+  const all=Array.from(fileList);
+  const prefix=(all[0]?.webkitRelativePath||'').split('/')[0]+'/';
+
+  for (const f of all) {
+    const rel=f.webkitRelativePath.startsWith(prefix)?f.webkitRelativePath.slice(prefix.length):f.webkitRelativePath;
+    try { S.files[rel]=await readFile(f); } catch(e){ console.warn(rel,e); }
+  }
+
+  S.metadata=tryJson(S.files['metadata.json']);
+  S.pipeline=tryJson(S.files['pipeline.json']);
+  S.qcReport=tryJson(S.files['qc/report.json']);
+
+  for (const [rel,text] of Object.entries(S.files)) {
+    if (rel.startsWith('chapters/')&&rel.endsWith('.json')) {
+      const slug=rel.slice(9,-5);
+      const d=tryJson(text);
+      if (d) S.chapters[slug]=d;
+    }
+  }
+
+  for (const [rel,text] of Object.entries(S.files)) {
+    if (rel.startsWith('summaries/')&&rel.endsWith('.md')) {
+      const parts=rel.split('/');
+      if (parts.length===3) {
+        const lang=parts[1], name=parts[2].slice(0,-3);
+        if (!S.summaries[lang]) S.summaries[lang]={};
+        S.summaries[lang][name]=text;
+      }
+    }
+  }
+
+  for (const cat of ['facts','examples','metaphors','quotes','glossary']) {
+    const d=tryJson(S.files['extractions/'+cat+'.json']);
+    if (Array.isArray(d)) d.forEach(item=>S.extractions.push({...item,_cat:cat}));
+  }
+
+  S.reviews.synthesis=S.files['reviews/synthesis.md']||'';
+  for (const [rel,text] of Object.entries(S.files)) {
+    if (rel.startsWith('reviews/raw/')&&rel.endsWith('.json')) {
+      const name=rel.slice(12,-5);
+      const d=tryJson(text);
+      if (d) S.reviews.raw[name]=d;
+    }
+  }
+
+  const langs=Object.keys(S.summaries);
+  S.currentLang=langs[0]||'';
+
+  renderAll();
+}
+
+// ── Render ──
+function renderAll() {
+  document.getElementById('hero').style.display='none';
+  document.getElementById('main').style.display='flex';
+  const title=S.metadata?.title||'Untitled';
+  document.getElementById('bookTitleHeader').textContent=title;
+  document.title=title+' — Reading Assistant';
+  renderOverview();
+  renderSummaries();
+  renderExtractionFilters();
+  buildExtractionCards();
+  renderReviews();
+  renderQC();
+  renderPipeline();
+}
+
+// ── Overview ──
+function renderOverview() {
+  const m=S.metadata, p=S.pipeline, qc=S.qcReport;
+  const parts=[];
+
+  // Book card
+  let bc='<div class="card">';
+  bc+='<div class="card-header"><div><div class="card-title">'+esc(m?.title||'Unknown Title')+'</div>';
+  if (m?.author) bc+='<div class="card-subtitle">'+esc(m.author)+'</div>';
+  bc+='</div>';
+  if (qc?.verdict) bc+=badge(qc.verdict);
+  bc+='</div>';
+  bc+='<div class="meta-grid">';
+  bc+=mi('Language',m?.language);
+  bc+=mi('Target Language',m?.target_language||p?.config?.target_language);
+  bc+=mi('Genre',m?.genre);
+  bc+=mi('Chapters',numFmt(m?.chapters?.length??Object.keys(S.chapters).length||null));
+  bc+=mi('Word Count',numFmt(m?.word_count));
+  if (p?.total_cost_usd!=null) bc+=mi('Pipeline Cost','$'+Number(p.total_cost_usd).toFixed(4));
+  bc+='</div>';
+  if (m?.warnings?.length) {
+    m.warnings.forEach(w=>{ bc+='<div class="warn-item"><span>⚠</span><span>'+esc(w)+'</span></div>'; });
+  }
+  bc+='</div>';
+  parts.push(bc);
+
+  // Pipeline summary
+  if (p?.phases) {
+    const entries=Object.entries(p.phases);
+    const done=entries.filter(([,ph])=>ph.status==='completed').length;
+    const total=entries.length;
+    const pctV=total>0?Math.round(done/total*100):0;
+    let pc='<div class="card"><div class="card-header"><div class="card-title">Pipeline Progress</div><span style="font-size:13px;color:var(--text2)">'+done+' / '+total+' phases</span></div>';
+    pc+='<div class="progress-wrap" style="margin-bottom:8px"><div class="progress-bar accent" style="width:'+pctV+'%"></div></div>';
+    pc+='<div style="font-size:12px;color:var(--text3);margin-bottom:16px">'+pctV+'% complete</div>';
+    pc+='<div class="phase-list">';
+    entries.forEach(([name,ph])=>{
+      const sc=statusCls(ph.status);
+      const d=dur(ph.started_at,ph.completed_at);
+      pc+='<div class="phase-item"><span class="dot dot-'+sc+'"></span><span class="phase-name">'+esc(titleCase(name))+'</span><span class="phase-time">'+esc(d||ph.status||'pending')+'</span></div>';
+    });
+    pc+='</div></div>';
+    parts.push(pc);
+  }
+
+  // QC verdict
+  if (qc) {
+    const vl=(qc.verdict||'').toLowerCase();
+    let qb='<div class="verdict-banner '+vl+'">';
+    qb+='<div><div class="verdict-label">QC '+esc((qc.verdict||'').toUpperCase())+'</div>';
+    qb+='<div class="verdict-desc">';
+    if (qc.summary) qb+=(qc.summary.total_checks||0)+' checks — '+(qc.summary.passed||0)+' passed, '+(qc.summary.failed_after_retries||0)+' failed';
+    qb+='</div></div></div>';
+    parts.push(qb);
+  }
+
+  // Extraction stats
+  if (S.extractions.length) {
+    const cats={fact:0,example:0,metaphor:0,quote:0,glossary:0};
+    S.extractions.forEach(e=>{
+      const c=(e.category||e._cat||'').replace(/s$/,'');
+      if (c in cats) cats[c]++;
+    });
+    let eb='<div class="card"><div class="card-header"><div class="card-title">Knowledge Extractions</div><span style="font-size:13px;color:var(--text2)">'+S.extractions.length+' total</span></div>';
+    eb+='<div class="grid-4">';
+    [['fact','Facts'],['example','Examples'],['metaphor','Metaphors'],['quote','Quotes'],['glossary','Glossary']].forEach(([c,l])=>{
+      eb+='<div class="meta-item"><div class="meta-label">'+l+'</div><div class="meta-value large">'+cats[c]+'</div></div>';
+    });
+    eb+='</div></div>';
+    parts.push(eb);
+  }
+
+  setHTML('overviewInner',parts.join(''));
+}
+
+function mi(label,value) {
+  return '<div class="meta-item"><div class="meta-label">'+esc(label)+'</div><div class="meta-value">'+esc(value==null?'—':String(value))+'</div></div>';
+}
+
+// ── Summaries ──
+function renderSummaries() {
+  const langs=Object.keys(S.summaries);
+  if (!langs.length) { setHTML('summariesInner',empty('No summaries found.')); return; }
+  let h='<div class="lang-tabs" id="langTabs">';
+  langs.forEach(lang=>{ h+='<button class="lang-tab'+(lang===S.currentLang?' active':'')+'" data-lang="'+esc(lang)+'">'+lang.toUpperCase()+'</button>'; });
+  h+='</div>';
+  langs.forEach(lang=>{
+    const data=S.summaries[lang]||{};
+    h+='<div class="lang-panel" data-lang="'+esc(lang)+'" style="display:'+(lang===S.currentLang?'block':'none')+'">';
+    if (data['book-summary']) {
+      h+='<div class="summary-book"><div class="summary-label">Book Summary</div><div class="md-content">'+md(data['book-summary'])+'</div></div>';
+    }
+    const slugs=Object.keys(data).filter(k=>k!=='book-summary');
+    if (slugs.length) {
+      h+='<div class="sh">Chapter Summaries</div>';
+      slugs.forEach((slug,i)=>{
+        const title=S.chapters[slug]?.title||slug;
+        h+='<div class="chapter-card">';
+        h+='<div class="chapter-card-header" onclick="toggleChapter(this)">';
+        h+='<div class="chapter-num">'+(i+1)+'</div>';
+        h+='<div class="chapter-title-text">'+esc(title)+'</div>';
+        h+=caret();
+        h+='</div>';
+        h+='<div class="chapter-body md-content">'+md(data[slug])+'</div>';
+        h+='</div>';
+      });
+    }
+    h+='</div>';
+  });
+  setHTML('summariesInner',h);
+
+  document.getElementById('langTabs').addEventListener('click',e=>{
+    const btn=e.target.closest('.lang-tab');
+    if (!btn) return;
+    S.currentLang=btn.dataset.lang;
+    document.querySelectorAll('.lang-tab').forEach(b=>b.classList.toggle('active',b.dataset.lang===S.currentLang));
+    document.querySelectorAll('.lang-panel').forEach(p=>{ p.style.display=p.dataset.lang===S.currentLang?'block':'none'; });
+  });
+}
+
+window.toggleChapter=function(header) {
+  const body=header.nextElementSibling;
+  const open=body.classList.toggle('open');
+  header.classList.toggle('open',open);
+};
+
+// ── Extractions ──
+function renderExtractionFilters() {
+  const counts={fact:0,example:0,metaphor:0,quote:0,glossary:0};
+  S.extractions.forEach(e=>{ const c=(e.category||e._cat||'').replace(/s$/,''); if (c in counts) counts[c]++; });
+  document.getElementById('cAll').textContent=S.extractions.length;
+  document.getElementById('extBadge').textContent=S.extractions.length;
+  document.getElementById('cFact').textContent=counts.fact;
+  document.getElementById('cExample').textContent=counts.example;
+  document.getElementById('cMetaphor').textContent=counts.metaphor;
+  document.getElementById('cQuote').textContent=counts.quote;
+  document.getElementById('cGlossary').textContent=counts.glossary;
+}
+
+function buildExtractionCards() {
+  const list=document.getElementById('extractionsList');
+  if (!S.extractions.length) { list.innerHTML=empty('No extractions found in this output folder.'); return; }
+  const frag=document.createDocumentFragment();
+  S.extractions.forEach((item,idx)=>{ frag.appendChild(makeExtCard(item,idx)); });
+  list.innerHTML='';
+  list.appendChild(frag);
+  S.allCardsBuilt=true;
+  applyExtFilter();
+}
+
+function makeExtCard(item, idx) {
+  const cat=(item.category||item._cat||'').replace(/s$/,'');
+  const el=document.createElement('div');
+  el.className='ext-card'+(cat==='quote'?' quote-card':'');
+  el.dataset.cat=cat;
+  el.dataset.idx=idx;
+
+  const chap=item.chapter!=null?'Ch. '+item.chapter:(item.chapter_first_seen!=null?'Ch. '+item.chapter_first_seen:'');
+  const page=item.page_estimate?'p. '+Math.round(item.page_estimate):'';
+  const meta=document.createElement('div');
+  meta.className='ext-meta';
+  if (chap) meta.appendChild(document.createTextNode(chap));
+  if (chap && page) meta.appendChild(document.createTextNode(' · '));
+  if (page) meta.appendChild(document.createTextNode(page));
+
+  if (cat==='glossary') {
+    const term=document.createElement('div');
+    term.className='glossary-term';
+    term.textContent=item.term||'';
+    el.appendChild(term);
+    const def=document.createElement('div');
+    def.className='glossary-def';
+    def.textContent=item.definition||'';
+    el.appendChild(def);
+    if (item.related_terms?.length) {
+      const tags=document.createElement('div');
+      tags.className='tag-list';
+      item.related_terms.forEach(t=>{ const s=document.createElement('span'); s.className='tag'; s.textContent=t; tags.appendChild(s); });
+      el.appendChild(tags);
+    }
+  } else if (cat==='quote') {
+    const hdr=document.createElement('div');
+    hdr.className='ext-header';
+    const qt=document.createElement('div');
+    qt.className='quote-text';
+    qt.textContent='\u201c'+(item.text||'')+'\u201d';
+    hdr.appendChild(qt);
+    const bw=document.createElement('div');
+    bw.className='ext-badges';
+    bw.innerHTML=checkIcon(item.verified);
+    hdr.appendChild(bw);
+    el.appendChild(hdr);
+    if (item.speaker) {
+      const sp=document.createElement('div');
+      sp.style.cssText='font-size:13px;color:var(--text2);margin-bottom:6px';
+      sp.textContent='\u2014 '+item.speaker;
+      el.appendChild(sp);
+    }
+  } else {
+    const hdr=document.createElement('div');
+    hdr.className='ext-header';
+    const txt=document.createElement('div');
+    txt.className='ext-text';
+    txt.textContent=item.text||'';
+    hdr.appendChild(txt);
+    const bw=document.createElement('div');
+    bw.className='ext-badges';
+    if (cat==='fact'&&item.confidence) {
+      const b=document.createElement('span');
+      b.className='badge badge-'+item.confidence;
+      b.textContent=item.confidence;
+      bw.appendChild(b);
+    }
+    hdr.appendChild(bw);
+    el.appendChild(hdr);
+    if (cat==='example'&&item.illustrates) {
+      const il=document.createElement('div');
+      il.style.cssText='font-size:12px;margin-bottom:6px';
+      il.innerHTML='<span class="badge badge-info">illustrates</span> <span style="color:var(--text2)">'+esc(item.illustrates)+'</span>';
+      el.appendChild(il);
+    }
+    if (cat==='metaphor'&&(item.source_domain||item.target_domain)) {
+      const md2=document.createElement('div');
+      md2.style.cssText='font-size:12px;margin-bottom:6px;color:var(--text2)';
+      md2.innerHTML=esc(item.source_domain||'')+' <span style="color:var(--accent)">&#8594;</span> '+esc(item.target_domain||'');
+      el.appendChild(md2);
+    }
+  }
+  el.appendChild(meta);
+  return el;
+}
+
+function applyExtFilter() {
+  const cat=S.currentCat, q=S.searchQ.toLowerCase();
+  const cards=document.querySelectorAll('#extractionsList .ext-card');
+  let visible=0;
+  cards.forEach(card=>{
+    const catOk=cat==='all'||card.dataset.cat===cat;
+    const textOk=!q||card.textContent.toLowerCase().includes(q);
+    const show=catOk&&textOk;
+    card.style.display=show?'':'none';
+    if (show) visible++;
+  });
+  document.getElementById('visibleCount').textContent=visible===S.extractions.length?'':`Showing ${visible} of ${S.extractions.length}`;
+}
+
+// ── Reviews ──
+function renderReviews() {
+  let h='';
+  if (S.reviews.synthesis) {
+    h+='<div class="sh">Synthesis</div><div class="synthesis-wrap md-content">'+md(S.reviews.synthesis)+'</div>';
+  } else {
+    h+=empty('No review synthesis found.');
+  }
+  const raw=Object.entries(S.reviews.raw);
+  if (raw.length) {
+    h+='<div class="sh">Raw Reviews</div>';
+    raw.forEach(([source,data])=>{
+      const status=data.status||'unknown';
+      const count=Array.isArray(data.reviews)?data.reviews.length:(data.review_count||0);
+      const rating=data.average_rating||data.rating;
+      h+='<div class="source-card">';
+      h+='<div class="source-header" onclick="toggleSource(this)">';
+      h+='<span class="dot dot-'+statusCls(status)+'"></span>';
+      h+='<span class="source-name">'+esc(source)+'</span>';
+      if (rating) h+='<span class="source-rating">'+Number(rating).toFixed(1)+' / 5</span>';
+      h+='<span class="badge badge-neutral">'+count+' reviews</span>';
+      h+=caret();
+      h+='</div>';
+      h+='<div class="source-body">';
+      if (Array.isArray(data.reviews)&&data.reviews.length) {
+        data.reviews.forEach(rev=>{
+          h+='<div class="review-item">';
+          const name=rev.reviewer||rev.author||rev.name;
+          if (name) h+='<div class="review-reviewer">'+esc(name)+'</div>';
+          if (rev.rating) h+='<div style="font-size:12px;color:var(--text3);margin-bottom:4px">Rating: '+esc(rev.rating)+'</div>';
+          const body=rev.text||rev.review||rev.body||'';
+          const bodyNode=document.createElement('div');
+          bodyNode.textContent=body;
+          h+='<div>'+bodyNode.innerHTML+'</div>';
+          h+='</div>';
+        });
+      } else {
+        h+='<p style="font-size:13px;color:var(--text3);padding:8px 0">No individual reviews available ('+esc(status)+').</p>';
+      }
+      h+='</div></div>';
+    });
+  }
+  setHTML('reviewsInner',h||empty('No review data found.'));
+}
+
+window.toggleSource=function(header) {
+  const body=header.nextElementSibling;
+  const open=body.classList.toggle('open');
+  const c=header.querySelector('.caret');
+  if (c) c.style.transform=open?'rotate(90deg)':'';
+};
+
+// ── QC Report ──
+function renderQC() {
+  const qc=S.qcReport;
+  if (!qc) { setHTML('qcInner',empty('No QC report found (qc/report.json).')); return; }
+  const vl=(qc.verdict||'').toLowerCase();
+  let h='';
+
+  h+='<div class="verdict-banner '+vl+'">';
+  h+='<div><div class="verdict-label">QC '+esc((qc.verdict||'').toUpperCase())+'</div>';
+  h+='<div class="verdict-desc">';
+  if (qc.timestamp) h+='Verified on '+new Date(qc.timestamp).toLocaleDateString();
+  h+='</div></div></div>';
+
+  if (qc.summary) {
+    h+='<div class="qc-summary-grid">';
+    h+=qstat(qc.summary.total_checks||0,'Total Checks','var(--text)');
+    h+=qstat(qc.summary.passed||0,'Passed','var(--pass)');
+    h+=qstat(qc.summary.failed_after_retries||0,'Failed','var(--fail)');
+    h+=qstat(qc.summary.retried_and_passed||0,'Retried &amp; Passed','var(--warn)');
+    h+='</div>';
+  }
+
+  if (qc.sub_agent_results) {
+    h+='<div class="sh">Check Results</div>';
+    Object.entries(qc.sub_agent_results).forEach(([name,cd])=>{
+      const rate=cd.pass_rate||(cd.total>0?cd.passed/cd.total:0);
+      const p=pct(rate);
+      const bc=p>=90?'pass':p>=70?'warn':'fail';
+      const bv=p>=90?'pass':p>=70?'warn':'fail';
+      h+='<div class="qc-check">';
+      h+='<div class="qc-check-header"><div class="qc-check-name">'+esc(titleCase(name))+'</div>'+badge(bv)+'</div>';
+      if (cd.total!=null) {
+        h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><div class="progress-wrap" style="flex:1"><div class="progress-bar '+bc+'" style="width:'+p+'%"></div></div><span style="font-size:13px;font-weight:600;min-width:36px">'+p+'%</span></div>';
+        h+='<div class="qc-stats-text">'+(cd.passed||0)+' passed / '+(cd.failed||0)+' failed / '+cd.total+' total</div>';
+      }
+      const failedItems=(cd.items||[]).filter(i=>i.status==='fail'||i.status==='failed');
+      if (failedItems.length) {
+        h+='<div class="failed-items"><div style="font-size:12px;color:var(--text3);margin-bottom:6px">Failed items ('+failedItems.length+')</div>';
+        failedItems.slice(0,10).forEach(fi=>{ h+='<div class="failed-item">'+esc(fi.best_match_text||fi.text||JSON.stringify(fi))+'</div>'; });
+        if (failedItems.length>10) h+='<div style="font-size:12px;color:var(--text3);margin-top:4px">...and '+(failedItems.length-10)+' more</div>';
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+  }
+
+  if (qc.retries?.length) {
+    h+='<div class="sh">Retry Log</div><div class="card">';
+    qc.retries.forEach(r=>{
+      h+='<div class="review-item"><strong>Attempt '+esc(r.attempt)+'</strong> — '+esc(r.agent||'');
+      if (r.items_retried) h+=' ('+r.items_retried+' items)';
+      if (r.result) h+=' <span style="color:var(--'+(r.result==='pass'?'pass':'fail')+')">'+esc(r.result)+'</span>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+
+  setHTML('qcInner',h);
+}
+
+function qstat(num,label,color) {
+  return '<div class="qc-stat"><div class="qc-stat-num" style="color:'+color+'">'+num+'</div><div class="qc-stat-label">'+label+'</div></div>';
+}
+
+// ── Pipeline ──
+function renderPipeline() {
+  const p=S.pipeline;
+  if (!p) { setHTML('pipelineInner',empty('No pipeline.json found.')); return; }
+  let h='';
+
+  if (p.phases) {
+    h+='<div class="sh">Phase Timeline</div><div class="pipeline-timeline">';
+    Object.entries(p.phases).forEach(([name,ph])=>{
+      const s=(ph.status||'pending').toLowerCase();
+      const d=dur(ph.started_at,ph.completed_at);
+      let timing='';
+      if (ph.started_at) timing+='Started '+fmtTime(ph.started_at);
+      if (d) timing+=(timing?' · ':'')+d;
+      h+='<div class="pipeline-phase">';
+      h+='<div class="phase-dot-col"><div class="phase-circle '+s+'">'+phaseIcon(ph.status)+'</div></div>';
+      h+='<div class="phase-col"><div class="phase-label">'+esc(titleCase(name))+'</div>';
+      if (timing) h+='<div class="phase-timing">'+esc(timing)+'</div>';
+      if (ph.error) h+='<div class="phase-error">'+esc(ph.error)+'</div>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }
+
+  if (p.cost_breakdown||p.total_cost_usd!=null) {
+    h+='<div class="sh">Cost</div><div class="card">';
+    if (p.cost_breakdown&&Object.keys(p.cost_breakdown).length) {
+      h+='<table class="cost-table"><thead><tr><th>Phase</th><th>Tokens In</th><th>Tokens Out</th><th>Cost (USD)</th></tr></thead><tbody>';
+      let ti=0,to=0,tc=0;
+      Object.entries(p.cost_breakdown).forEach(([phase,c])=>{
+        const ci=c.tokens_in||0,co=c.tokens_out||0,cc=c.cost_usd||0;
+        ti+=ci; to+=co; tc+=cc;
+        h+='<tr><td>'+esc(phase)+'</td><td>'+numFmt(ci)+'</td><td>'+numFmt(co)+'</td><td>$'+cc.toFixed(4)+'</td></tr>';
+      });
+      h+='<tr><td>Total</td><td>'+numFmt(ti)+'</td><td>'+numFmt(to)+'</td><td>$'+tc.toFixed(4)+'</td></tr>';
+      h+='</tbody></table>';
+    } else if (p.total_cost_usd!=null) {
+      h+='<div style="font-size:15px;font-weight:600">Total: $'+Number(p.total_cost_usd).toFixed(4)+'</div>';
+    }
+    h+='</div>';
+  }
+
+  if (p.config&&Object.keys(p.config).length) {
+    h+='<div class="sh">Configuration</div><pre class="config-pre">'+esc(JSON.stringify(p.config,null,2))+'</pre>';
+  }
+
+  setHTML('pipelineInner',h);
+}
+
+// ── Event Wiring ──
+function handleFiles(fl) { if (fl.length) loadFolder(fl); }
+document.getElementById('folderInput').addEventListener('change',e=>handleFiles(e.target.files));
+document.getElementById('folderInputHeader').addEventListener('change',e=>handleFiles(e.target.files));
+
+document.getElementById('tabBar').addEventListener('click',e=>{
+  const btn=e.target.closest('.tab-btn');
+  if (!btn) return;
+  const tab=btn.dataset.tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='tab-'+tab));
+});
+
+document.getElementById('filterBar').addEventListener('click',e=>{
+  const btn=e.target.closest('.filter-btn');
+  if (!btn) return;
+  S.currentCat=btn.dataset.cat;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat===S.currentCat));
+  applyExtFilter();
+});
+
+document.getElementById('extSearch').addEventListener('input',e=>{
+  S.searchQ=e.target.value;
+  applyExtFilter();
+});
+
+let isDark=true;
+document.getElementById('themeToggle').addEventListener('click',()=>{
+  isDark=!isDark;
+  document.documentElement.setAttribute('data-theme',isDark?'':'light');
+  const icon=document.getElementById('themeIcon');
+  if (isDark) {
+    icon.innerHTML='<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  } else {
+    icon.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  }
+});
+</script>
+</body>
+</html>
