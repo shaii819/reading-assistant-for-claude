@@ -1,8 +1,18 @@
 {
   "name": "reading-assistant",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Process EPUB books into summaries, knowledge extractions, Obsidian notes, and RAG databases",
-  "author": { "name": "xiaolai" },
+  "author": {
+    "name": "xiaolai"
+  },
   "license": "MIT",
-  "keywords": ["epub", "reading", "summarization", "obsidian", "rag", "zettelkasten", "book-review"]
+  "keywords": [
+    "epub",
+    "reading",
+    "summarization",
+    "obsidian",
+    "rag",
+    "zettelkasten",
+    "book-review"
+  ]
 }
